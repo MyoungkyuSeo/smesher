@@ -50,12 +50,16 @@ server = app.server  # Expose the Flask server (for production deployment if nee
 
 # Define the layout for the Dash app.
 app.layout = html.Div([
-    html.H1("CSV Line Graph with Dash"),
+    html.Div([
+        html.Img(src="/pictures/teslalogo.jpg", style={'height': '60px'}),
+        html.H1("CSV Line Graph with Dash", style={'display': 'inline-block', 'marginLeft': '20px'})
+    ], style={'display': 'flex', 'alignItems': 'center', 'padding': '10px'}),
     dcc.Graph(
         id='line-graph',
         figure=fig
     )
 ])
+
 
 # Run the app.
 if __name__ == '__main__':
