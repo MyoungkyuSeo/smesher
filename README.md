@@ -13,7 +13,7 @@ Electronic chip can withstadn a maximum package temperature of 50 C.
 Heat sink is attached to the top of the chip, airflow of 1 m/s will be supplied to the heat sink.
 Will heat sink and airflow provide sufficient cooling for the chip?
 
-Answered in: Max temperature, downstreap of air temperature
+Answered in: Max temperature reached in the cell and face of the chip
  
 ## app.py
 
