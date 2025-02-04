@@ -3,3 +3,4 @@ pandas==2.2.3
 plotly==6.0.0
 ansys-mapdl-core==0.67.0
 h5py=3.12.1
+XlsxWriter==3.2.2
