@@ -1,21 +1,13 @@
 #!/usr/bin/env python3
 """
-Export all datasets from an HDF5 file to CSV files.
+Automatically export each dataset from the HDF5 file containing ".dat." in its name 
+(from the ./data folder) into separate CSV files. All CSV files will be saved inside 
+a folder named "exported_data" in the project root.
 
-This script opens an HDF5 file (assumed here to be "preprocess.h5" in the "data" folder)
-and recursively iterates through all groups and datasets. Each dataset is exported as a CSV file
-into the specified output directory. The CSV filenames are derived from the full HDF5 path.
-
-Usage:
-    python preprocess.py --input data/preprocess.h5 --output_dir exported_csv
-
-Dependencies:
-    - h5py
-    - pandas
+No command-line input is required.
 """
 
 import os
-import argparse
 import h5py
 import pandas as pd
 import logging
@@ -30,14 +22,12 @@ logging.basicConfig(
 def export_dataset_to_csv(dataset, csv_filename):
     """
     Exports a single HDF5 dataset to a CSV file.
-
+    
     Parameters:
       dataset: The h5py.Dataset object.
       csv_filename: The output CSV filename.
     """
-    # Retrieve the data from the dataset.
     data = dataset[()]
-    
     # Handle different dimensionalities:
     if data.ndim == 1:
         # One-dimensional data becomes a single column.
@@ -46,7 +36,7 @@ def export_dataset_to_csv(dataset, csv_filename):
         # Two-dimensional data: assume each row is an observation.
         df = pd.DataFrame(data)
     else:
-        # For higher dimensions, we flatten the dataset into 2D.
+        # For higher dimensions, flatten the dataset into 2D.
         df = pd.DataFrame(data.reshape(data.shape[0], -1))
     
     df.to_csv(csv_filename, index=False)
@@ -55,7 +45,7 @@ def export_dataset_to_csv(dataset, csv_filename):
 def recursive_export(h5group, base_path, output_dir):
     """
     Recursively iterates through an HDF5 group and exports each dataset found.
-
+    
     Parameters:
       h5group: The current h5py.Group object.
       base_path: The current group path as a string.
@@ -63,7 +53,6 @@ def recursive_export(h5group, base_path, output_dir):
     """
     for key in h5group:
         item = h5group[key]
-        # Construct a new base path for this item.
         new_base = f"{base_path}/{key}" if base_path else key
         if isinstance(item, h5py.Group):
             recursive_export(item, new_base, output_dir)
@@ -72,26 +61,36 @@ def recursive_export(h5group, base_path, output_dir):
             csv_filename = os.path.join(output_dir, new_base.replace("/", "__") + ".csv")
             export_dataset_to_csv(item, csv_filename)
 
-def main(input_h5, output_dir):
-    """
-    Main function to open the HDF5 file and export all datasets to CSV files.
-    """
-    if not os.path.exists(input_h5):
-        logging.error("Input file not found: %s", input_h5)
+def main():
+    # Define the data directory.
+    data_dir = os.path.join(os.getcwd(), "data")
+    
+    # Automatically search for a file with ".dat." in its name ending with .h5.
+    input_file = None
+    for filename in os.listdir(data_dir):
+        if ".dat." in filename and filename.endswith(".h5"):
+            input_file = os.path.join(data_dir, filename)
+            break
+
+    if not input_file:
+        logging.error("No .dat.h5 file found in the data directory.")
         return
 
+    logging.info("Using file: %s", input_file)
+    
+    # Create an output folder named "exported_data" in the project root.
+    output_dir = os.path.join(os.getcwd(), "exported_data")
     os.makedirs(output_dir, exist_ok=True)
-    with h5py.File(input_h5, 'r') as f:
-        logging.info("Opened HDF5 file with keys: %s", list(f.keys()))
-        recursive_export(f, "", output_dir)
+    
+    try:
+        with h5py.File(input_file, 'r') as f:
+            logging.info("Opened HDF5 file with top-level keys: %s", list(f.keys()))
+            recursive_export(f, "", output_dir)
+    except Exception as e:
+        logging.exception("Error processing the HDF5 file: %s", e)
+        return
+
     logging.info("Export complete. CSV files are in %s", output_dir)
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(
-        description="Export all datasets from an HDF5 file to CSV files"
-    )
-    parser.add_argument("--input", type=str, required=True, help="Path to input HDF5 file")
-    parser.add_argument("--output_dir", type=str, default="exported2_csv", help="Directory to store CSV files")
-    args = parser.parse_args()
-
-    main(args.input, args.output_dir)
+    main()
